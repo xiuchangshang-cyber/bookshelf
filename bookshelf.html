@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>我的书架</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600&family=Noto+Sans+SC:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #F5EFE6;
+    font-family: 'Noto Sans SC', sans-serif;
+    min-height: 100vh;
+    padding: 3rem 2rem;
+  }
+
+  h1 {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 1.6rem;
+    font-weight: 600;
+    color: #3B2A1A;
+    margin-bottom: 0.3rem;
+  }
+
+  .subtitle {
+    font-size: 0.85rem;
+    color: #9B8070;
+    margin-bottom: 2rem;
+  }
+
+  .search-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 2rem;
+    max-width: 500px;
+  }
+
+  .search-row input {
+    flex: 1;
+    padding: 10px 14px;
+    border: 1.5px solid #D4C4B0;
+    border-radius: 8px;
+    background: #FDF8F3;
+    font-size: 14px;
+    font-family: 'Noto Sans SC', sans-serif;
+    color: #3B2A1A;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .search-row input:focus { border-color: #8B5E3C; }
+  .search-row input::placeholder { color: #BBA898; }
+
+  .search-row button {
+    padding: 10px 18px;
+    background: #8B5E3C;
+    color: #FDF8F3;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: 'Noto Sans SC', sans-serif;
+    cursor: pointer;
+    transition: background 0.2s;
+    white-space: nowrap;
+  }
+
+  .search-row button:hover { background: #6B4423; }
+  .search-row button:disabled { background: #C4A882; cursor: not-allowed; }
+
+  .status {
+    font-size: 13px;
+    color: #9B8070;
+    margin-bottom: 1.5rem;
+    min-height: 18px;
+  }
+
+  .shelf-section {
+    margin-bottom: 1rem;
+  }
+
+  .shelf-label {
+    font-size: 12px;
+    color: #9B8070;
+    margin-bottom: 0.5rem;
+    letter-spacing: 0.05em;
+  }
+
+  .shelf-body {
+    background: #7A4E2D;
+    border-radius: 4px 4px 0 0;
+    padding: 1.2rem 1.2rem 0;
+    min-height: 220px;
+  }
+
+  .books-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: flex-end;
+    padding-bottom: 0.8rem;
+  }
+
+  .shelf-plank {
+    height: 16px;
+    background: #5C3A1E;
+    border-radius: 0 0 4px 4px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    margin-bottom: 2rem;
+  }
+
+  .book {
+    width: 100px;
+    height: 148px;
+    border-radius: 3px 6px 6px 3px;
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.18s ease;
+    flex-shrink: 0;
+    box-shadow: 2px 3px 8px rgba(0,0,0,0.25);
+    overflow: hidden;
+  }
+
+  .book:hover {
+    transform: translateY(-10px) scale(1.03);
+    box-shadow: 4px 10px 20px rgba(0,0,0,0.3);
+    z-index: 10;
+  }
+
+  .book img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    border-radius: 3px 6px 6px 3px;
+  }
+
+  .book-fallback {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 8px;
+    text-align: center;
+  }
+
+  .book-fallback-title {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.5;
+    word-break: break-all;
+  }
+
+  .book-fallback-author {
+    font-size: 9px;
+    margin-top: 6px;
+    opacity: 0.75;
+    line-height: 1.4;
+  }
+
+  .book-spine-line {
+    position: absolute;
+    left: 8px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: rgba(0,0,0,0.12);
+    border-radius: 0;
+  }
+
+  .book-tooltip {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #3B2A1A;
+    color: #FDF8F3;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 11px;
+    white-space: nowrap;
+    max-width: 160px;
+    white-space: normal;
+    text-align: center;
+    line-height: 1.4;
+    z-index: 20;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+
+  .book:hover .book-tooltip { opacity: 1; }
+
+  .empty-msg {
+    color: rgba(255,255,255,0.35);
+    font-size: 13px;
+    padding: 3rem 1rem;
+    text-align: center;
+    width: 100%;
+  }
+
+  .book-remove {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 18px;
+    height: 18px;
+    background: rgba(0,0,0,0.45);
+    border-radius: 50%;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: white;
+    cursor: pointer;
+    z-index: 15;
+  }
+
+  .book:hover .book-remove { display: flex; }
+  .book-remove:hover { background: rgba(180,0,0,0.7); }
+
+  @media (max-width: 600px) {
+    .book { width: 80px; height: 118px; }
+    .book-fallback-title { font-size: 9px; }
+  }
+</style>
+</head>
+<body>
+
+<h1>我的书架</h1>
+<p class="subtitle">搜索书名，自动获取封面</p>
+
+<div class="search-row">
+  <input type="text" id="bookInput" placeholder="输入书名…" />
+  <button id="addBtn" onclick="addBook()">+ 添加</button>
+</div>
+
+<div class="status" id="status"></div>
+
+<div class="shelf-section">
+  <div class="shelf-label">在读 / 读完</div>
+  <div class="shelf-body">
+    <div class="books-row" id="booksRow">
+      <div class="empty-msg" id="emptyMsg">书架还空着，添加第一本吧</div>
+    </div>
+  </div>
+  <div class="shelf-plank"></div>
+</div>
+
+<script>
+const FALLBACK_COLORS = [
+  { bg: '#C2815A', text: '#4A2800' },
+  { bg: '#5A7EC2', text: '#001A4A' },
+  { bg: '#7EC25A', text: '#1A4A00' },
+  { bg: '#C2A25A', text: '#4A3200' },
+  { bg: '#9B5AC2', text: '#2A004A' },
+  { bg: '#5AC2C2', text: '#004A4A' },
+  { bg: '#C25A5A', text: '#4A0000' },
+  { bg: '#7A8C6E', text: '#1A2A0E' },
+];
+
+let books = [];
+let colorIdx = 0;
+
+async function addBook() {
+  const input = document.getElementById('bookInput');
+  const btn = document.getElementById('addBtn');
+  const title = input.value.trim();
+  if (!title) return;
+
+  const status = document.getElementById('status');
+  btn.disabled = true;
+  status.textContent = '搜索中…';
+  input.value = '';
+
+  try {
+    const url = `https://openlibrary.org/search.json?title=${encodeURIComponent(title)}&limit=3&fields=title,author_name,cover_i,isbn`;
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (!data.docs || data.docs.length === 0) {
+      status.textContent = '没找到这本书，换个关键词试试';
+      btn.disabled = false;
+      return;
+    }
+
+    // 找第一个有封面的结果
+    let doc = data.docs[0];
+    for (const d of data.docs) {
+      if (d.cover_i) { doc = d; break; }
+    }
+
+    const bookTitle = doc.title || title;
+    const author = doc.author_name ? doc.author_name[0] : '';
+    const coverId = doc.cover_i;
+
+    let coverUrl = null;
+    if (coverId) {
+      coverUrl = `https://covers.openlibrary.org/b/id/${coverId}-M.jpg`;
+    }
+
+    const color = FALLBACK_COLORS[colorIdx % FALLBACK_COLORS.length];
+    colorIdx++;
+
+    books.push({ title: bookTitle, author, coverUrl, color });
+    renderBooks();
+    status.textContent = `《${bookTitle}》已上架`;
+  } catch(e) {
+    status.textContent = '网络有点问题，请重试';
+  }
+
+  btn.disabled = false;
+}
+
+function removeBook(idx) {
+  books.splice(idx, 1);
+  renderBooks();
+}
+
+function renderBooks() {
+  const row = document.getElementById('booksRow');
+  const empty = document.getElementById('emptyMsg');
+
+  if (books.length === 0) {
+    row.innerHTML = '<div class="empty-msg" id="emptyMsg">书架还空着，添加第一本吧</div>';
+    return;
+  }
+
+  row.innerHTML = '';
+
+  books.forEach((b, i) => {
+    const div = document.createElement('div');
+    div.className = 'book';
+
+    const tip = document.createElement('div');
+    tip.className = 'book-tooltip';
+    tip.textContent = b.author ? `${b.title}\n${b.author}` : b.title;
+    div.appendChild(tip);
+
+    const rm = document.createElement('div');
+    rm.className = 'book-remove';
+    rm.textContent = '×';
+    rm.onclick = (e) => { e.stopPropagation(); removeBook(i); };
+    div.appendChild(rm);
+
+    const spineLine = document.createElement('div');
+    spineLine.className = 'book-spine-line';
+    div.appendChild(spineLine);
+
+    if (b.coverUrl) {
+      const img = document.createElement('img');
+      img.src = b.coverUrl;
+      img.alt = b.title;
+      img.loading = 'lazy';
+      img.onerror = () => {
+        img.remove();
+        appendFallback(div, b);
+      };
+      div.appendChild(img);
+    } else {
+      appendFallback(div, b);
+    }
+
+    row.appendChild(div);
+  });
+}
+
+function appendFallback(div, b) {
+  div.style.background = b.color.bg;
+  const fb = document.createElement('div');
+  fb.className = 'book-fallback';
+
+  const t = document.createElement('div');
+  t.className = 'book-fallback-title';
+  t.style.color = b.color.text;
+  t.textContent = b.title;
+  fb.appendChild(t);
+
+  if (b.author) {
+    const a = document.createElement('div');
+    a.className = 'book-fallback-author';
+    a.style.color = b.color.text;
+    a.textContent = b.author;
+    fb.appendChild(a);
+  }
+
+  div.appendChild(fb);
+}
+
+document.getElementById('bookInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') addBook();
+});
+
+// 预加载你读过的书
+async function preload() {
+  const list = ['现实不似你所见', '悉达多', '蓝玫瑰不会安眠'];
+  for (const t of list) {
+    document.getElementById('bookInput').value = t;
+    await addBook();
+    await new Promise(r => setTimeout(r, 800));
+  }
+}
+preload();
+</script>
+</body>
+</html>
