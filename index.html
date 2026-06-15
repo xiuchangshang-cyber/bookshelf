@@ -262,8 +262,14 @@ const FALLBACK_COLORS = [
   { bg: '#7A8C6E', text: '#1A2A0E' },
 ];
 
-let books = [];
+let books = JSON.parse(localStorage.getItem('bookshelfBooks') || '[]');
 let colorIdx = 0;
+ function saveBooks() {
+  localStorage.setItem(
+    'bookshelfBooks',
+    JSON.stringify(books)
+  );
+}
 
 async function addBook() {
   const input = document.getElementById('bookInput');
@@ -305,9 +311,17 @@ async function addBook() {
     const color = FALLBACK_COLORS[colorIdx % FALLBACK_COLORS.length];
     colorIdx++;
 
-    books.push({ title: bookTitle, author, coverUrl, color });
-    renderBooks();
-    status.textContent = `《${bookTitle}》已上架`;
+    books.push({
+  title: bookTitle,
+  author,
+  coverUrl,
+  color
+});
+
+saveBooks();
+renderBooks();
+
+status.textContent = `《${bookTitle}》已上架`;
   } catch(e) {
     status.textContent = '网络有点问题，请重试';
   }
@@ -317,6 +331,8 @@ async function addBook() {
 
 function removeBook(idx) {
   books.splice(idx, 1);
+
+  saveBooks();
   renderBooks();
 }
 
@@ -403,7 +419,11 @@ async function preload() {
     await new Promise(r => setTimeout(r, 800));
   }
 }
-preload();
+if (books.length > 0) {
+  renderBooks();
+} else {
+  preload();
+}
 </script>
 </body>
 </html>
